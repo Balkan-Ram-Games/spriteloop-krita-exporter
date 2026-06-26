@@ -61,12 +61,3 @@ my-character/
 
 See [docs/import-package-format.md](docs/import-package-format.md) for the metadata contract.
 
-## Development Notes
-
-The plugin targets Krita's built-in Python API and avoids third-party runtime dependencies.
-
-The initial exporter favors a conservative format that SpriteLoop can import later without knowing about Krita internals:
-
-- `canvas` stores the original document size
-- `parts[]` stores image file paths and original top-left placement
-- `hierarchy` is optional and can be ignored by early importers
