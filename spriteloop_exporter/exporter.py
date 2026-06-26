@@ -2,7 +2,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
-from typing import Dict, Iterable, Optional
+from typing import Callable, Dict, Iterable, Optional
 
 from krita import InfoObject
 
@@ -37,10 +37,19 @@ class ExportNode:
     parent_id: Optional[str]
 
 
-def export_document(document, export_dir: str, options: ExportOptions) -> ExportResult:
+ProgressCallback = Callable[[int, int, str], None]
+
+
+def export_document(
+    document,
+    export_dir: str,
+    options: ExportOptions,
+    progress_callback: Optional[ProgressCallback] = None,
+) -> ExportResult:
     if not export_dir:
         raise SpriteLoopExportError("Choose an export folder.")
 
+    export_dir = os.path.normpath(export_dir)
     os.makedirs(export_dir, exist_ok=True)
     images_dir = os.path.join(export_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
@@ -57,20 +66,23 @@ def export_document(document, export_dir: str, options: ExportOptions) -> Export
     node_ids = {id(item.node): item.id for item in nodes}
     parts = []
     hierarchy = []
+    total_nodes = len(nodes)
 
-    for item in nodes:
+    for index, item in enumerate(nodes, start=1):
         if item.node_type == "grouplayer":
             hierarchy.append(group_metadata(item, node_ids))
             if not options.export_groups_as_images:
+                report_progress(progress_callback, index, total_nodes, item.name)
                 continue
 
         rect = node_bounds(item.node)
         if rect["width"] <= 0 or rect["height"] <= 0:
+            report_progress(progress_callback, index, total_nodes, item.name)
             continue
 
         file_name = unique_file_name(slugify(item.name), used_file_names)
-        relative_path = os.path.join("images", file_name).replace("\\", "/")
-        absolute_path = os.path.join(export_dir, relative_path)
+        relative_path = "/".join(("images", file_name))
+        absolute_path = os.path.join(images_dir, file_name)
 
         save_node_png(item.node, absolute_path, rect)
 
@@ -88,6 +100,7 @@ def export_document(document, export_dir: str, options: ExportOptions) -> Export
         if item.parent_id:
             part["parentId"] = item.parent_id
         parts.append(part)
+        report_progress(progress_callback, index, total_nodes, item.name)
 
     if not parts:
         raise SpriteLoopExportError("No non-empty layers were exported.")
@@ -115,6 +128,16 @@ def export_document(document, export_dir: str, options: ExportOptions) -> Export
         handle.write("\n")
 
     return ExportResult(metadata_path=metadata_path, part_count=len(parts))
+
+
+def report_progress(
+    progress_callback: Optional[ProgressCallback],
+    current: int,
+    total: int,
+    node_name: str,
+) -> None:
+    if progress_callback:
+        progress_callback(current, total, node_name)
 
 
 def iter_export_nodes(root, options: ExportOptions) -> Iterable[ExportNode]:

@@ -2,6 +2,7 @@ from krita import Extension, Krita
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDialog,
     QDialogButtonBox,
@@ -12,12 +13,19 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QVBoxLayout,
 )
 import os
 
 from .exporter import ExportOptions, SpriteLoopExportError, export_document
+
+
+SETTINGS_GROUP = "spriteloop_exporter"
+LAST_EXPORT_DIR_KEY = "last_export_dir"
+EXPORT_GROUPS_AS_IMAGES_KEY = "export_groups_as_images"
+VISIBLE_ONLY_KEY = "visible_only"
 
 
 class SpriteLoopExporterExtension(Extension):
@@ -51,6 +59,21 @@ def show_export_dialog(parent=None):
     values = dialog.values()
 
     app = Krita.instance()
+    progress_dialog = QProgressDialog("Preparing export...", "Cancel", 0, 0, parent)
+    progress_dialog.setWindowTitle("SpriteLoop Export")
+    progress_dialog.setWindowModality(Qt.ApplicationModal)
+    progress_dialog.setMinimumDuration(0)
+    progress_dialog.show()
+    QApplication.processEvents()
+
+    def update_progress(current: int, total: int, node_name: str) -> None:
+        progress_dialog.setMaximum(total)
+        progress_dialog.setValue(current)
+        progress_dialog.setLabelText("Exporting {} ({}/{})".format(node_name, current, total))
+        QApplication.processEvents()
+        if progress_dialog.wasCanceled():
+            raise SpriteLoopExportError("Export canceled.")
+
     try:
         set_batch_mode(app, True)
         try:
@@ -61,9 +84,11 @@ def show_export_dialog(parent=None):
                     visible_only=values["visible_only"],
                     export_groups_as_images=values["export_groups_as_images"],
                 ),
+                update_progress,
             )
         finally:
             set_batch_mode(app, False)
+            progress_dialog.close()
     except SpriteLoopExportError as exc:
         QMessageBox.critical(parent, "SpriteLoop Export Failed", str(exc))
         return
@@ -84,6 +109,7 @@ class ExportOptionsDialog(QDialog):
         self.setWindowTitle("Export SpriteLoop Package")
         self.setMinimumWidth(520)
         self.resize(560, 360)
+        last_export_dir = read_plugin_setting(LAST_EXPORT_DIR_KEY, "")
 
         logo = QLabel()
         logo.setAlignment(Qt.AlignCenter)
@@ -98,6 +124,7 @@ class ExportOptionsDialog(QDialog):
 
         self.export_dir = QLineEdit()
         self.export_dir.setReadOnly(True)
+        self.export_dir.setText(last_export_dir)
 
         browse_button = QPushButton("Browse...")
         browse_button.clicked.connect(self.choose_export_dir)
@@ -112,10 +139,12 @@ class ExportOptionsDialog(QDialog):
         destination_group.setLayout(destination_form)
 
         self.export_groups_as_images = QCheckBox("Export groups as images")
-        self.export_groups_as_images.setChecked(True)
+        self.export_groups_as_images.setChecked(
+            read_bool_plugin_setting(EXPORT_GROUPS_AS_IMAGES_KEY, True)
+        )
 
         self.visible_only = QCheckBox("Export visible layers only")
-        self.visible_only.setChecked(True)
+        self.visible_only.setChecked(read_bool_plugin_setting(VISIBLE_ONLY_KEY, True))
 
         content_group = QGroupBox("Export Content")
         content_layout = QVBoxLayout()
@@ -138,10 +167,13 @@ class ExportOptionsDialog(QDialog):
         self.setLayout(layout)
 
     def choose_export_dir(self):
+        start_dir = self.export_dir.text().strip() or read_plugin_setting(LAST_EXPORT_DIR_KEY, "")
+        if start_dir and not os.path.isdir(start_dir):
+            start_dir = ""
         export_dir = QFileDialog.getExistingDirectory(
             self,
             "Export SpriteLoop Package",
-            "",
+            start_dir,
             QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )
         if export_dir:
@@ -151,6 +183,12 @@ class ExportOptionsDialog(QDialog):
         if not self.export_dir.text().strip():
             QMessageBox.warning(self, "SpriteLoop Exporter", "Choose an export folder.")
             return
+        write_plugin_setting(LAST_EXPORT_DIR_KEY, self.export_dir.text().strip())
+        write_plugin_setting(
+            EXPORT_GROUPS_AS_IMAGES_KEY,
+            bool_to_setting(self.export_groups_as_images.isChecked()),
+        )
+        write_plugin_setting(VISIBLE_ONLY_KEY, bool_to_setting(self.visible_only.isChecked()))
         super().accept()
 
     def values(self):
@@ -165,3 +203,26 @@ def set_batch_mode(app, enabled: bool) -> None:
     setter = getattr(app, "setBatchmode", None)
     if callable(setter):
         setter(enabled)
+
+
+def read_plugin_setting(key: str, default: str) -> str:
+    reader = getattr(Krita.instance(), "readSetting", None)
+    if not callable(reader):
+        return default
+    value = reader(SETTINGS_GROUP, key, default)
+    return value if value else default
+
+
+def write_plugin_setting(key: str, value: str) -> None:
+    writer = getattr(Krita.instance(), "writeSetting", None)
+    if callable(writer):
+        writer(SETTINGS_GROUP, key, value)
+
+
+def read_bool_plugin_setting(key: str, default: bool) -> bool:
+    value = read_plugin_setting(key, bool_to_setting(default)).strip().lower()
+    return value in ("1", "true", "yes", "on")
+
+
+def bool_to_setting(value: bool) -> str:
+    return "true" if value else "false"
