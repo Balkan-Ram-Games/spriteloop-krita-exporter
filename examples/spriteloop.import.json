@@ -1,0 +1,48 @@
+{
+  "format": "spriteloop.import",
+  "version": 1,
+  "source": {
+    "application": "Krita",
+    "plugin": "spriteloop-krita-exporter",
+    "documentName": "sample-character.kra"
+  },
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "parts": [
+    {
+      "id": "head",
+      "name": "Head",
+      "image": "images/head.png",
+      "x": 412,
+      "y": 96,
+      "width": 206,
+      "height": 188,
+      "opacity": 1,
+      "visible": true,
+      "parentId": "body"
+    },
+    {
+      "id": "torso",
+      "name": "Torso",
+      "image": "images/torso.png",
+      "x": 386,
+      "y": 278,
+      "width": 252,
+      "height": 338,
+      "opacity": 1,
+      "visible": true,
+      "parentId": "body"
+    }
+  ],
+  "hierarchy": [
+    {
+      "id": "body",
+      "name": "Body",
+      "type": "group",
+      "children": ["head", "torso"]
+    }
+  ]
+}
+

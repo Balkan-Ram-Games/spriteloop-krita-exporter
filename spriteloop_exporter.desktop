@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=Krita/PythonPlugin
+X-KDE-Library=spriteloop_exporter
+X-Python-2-Compatible=false
+Name=SpriteLoop Exporter
+Comment=Export Krita layers and groups as SpriteLoop import packages.
+
