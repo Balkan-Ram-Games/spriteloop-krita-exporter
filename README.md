@@ -1,5 +1,7 @@
 # SpriteLoop Krita Exporter
 
+[![Krita exporter](https://img.shields.io/badge/Krita-Exporter-00B7C3?style=for-the-badge&logo=krita&logoColor=white)](https://krita.org/)
+
 Krita Python plugin for exporting layered artwork as a SpriteLoop import package.
 
 The exporter creates:
@@ -61,3 +63,8 @@ my-character/
 
 See [docs/import-package-format.md](docs/import-package-format.md) for the metadata contract.
 
+## Related SpriteLoop Projects
+
+- [SpriteLoop App](https://github.com/Balkan-Ram-Games/spriteloop-app) - desktop animation editor
+- [Photoshop Exporter](https://github.com/Balkan-Ram-Games/spriteloop-photoshop-exporter) - Photoshop UXP exporter
+- [Defold Extension](https://github.com/Balkan-Ram-Games/spriteloop-defold) - native `.spla` playback for Defold
