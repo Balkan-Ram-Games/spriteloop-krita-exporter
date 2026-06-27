@@ -113,7 +113,7 @@ class ExportOptionsDialog(QDialog):
 
         logo = QLabel()
         logo.setAlignment(Qt.AlignCenter)
-        logo_path = os.path.join(os.path.dirname(__file__), "spriteloop-logo.png")
+        logo_path = os.path.join(os.path.dirname(__file__), "ui-logo.png")
         pixmap = QPixmap(logo_path)
         if not pixmap.isNull():
             logo.setPixmap(pixmap.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))

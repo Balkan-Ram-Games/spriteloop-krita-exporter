@@ -4,6 +4,8 @@
 
 Krita Python plugin for exporting layered artwork as a SpriteLoop import package.
 
+![SpriteLoop Krita Exporter interface](screenshots/preview.png)
+
 The exporter creates:
 
 - cropped PNG files for exported parts
