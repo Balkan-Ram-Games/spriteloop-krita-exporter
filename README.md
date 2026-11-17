@@ -70,3 +70,4 @@ See [docs/import-package-format.md](docs/import-package-format.md) for the metad
 - [SpriteLoop App](https://github.com/Balkan-Ram-Games/spriteloop-app) - desktop animation editor
 - [Photoshop Exporter](https://github.com/Balkan-Ram-Games/spriteloop-photoshop-exporter) - Photoshop UXP exporter
 - [Defold Extension](https://github.com/Balkan-Ram-Games/spriteloop-defold) - native `.spla` playback for Defold
+- [Godot Extension](https://github.com/Balkan-Ram-Games/spriteloop-godot) - native `.spla` playback for Godot 4.5+
